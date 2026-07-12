@@ -16,8 +16,10 @@ mode, search, filters, aircraft metadata, and a bundled airport database.
 3. Choose an iPhone or iPad Simulator.
 4. Press **Command-R**.
 
-The default environment uses a deterministic mock aircraft provider. Provider
-selection is configured in `FlightTracker/App/FlightTrackerApp.swift`.
+Normal launches use live OpenSky Network data. Add the `-UseMockProvider`
+launch argument for a deterministic offline demo, or set the
+`OPENSKY_BEARER_TOKEN` environment variable to authenticate OpenSky requests.
+Provider selection is configured in `FlightTracker/App/FlightTrackerApp.swift`.
 
 Run unit and UI tests with **Command-U**.
 

@@ -2,6 +2,12 @@ import XCTest
 @testable import FlightTracker
 
 final class DependencyInjectionTests: XCTestCase {
+    func testNormalLaunchUsesLiveProviderAndMockRequiresExplicitArgument() {
+        XCTAssertTrue(FlightTrackerApp.makeProvider(arguments: [], environment: [:]) is OpenSkyProvider)
+        XCTAssertTrue(FlightTrackerApp.makeProvider(arguments: ["-UseMockProvider"], environment: [:]) is MockAircraftProvider)
+        XCTAssertTrue(FlightTrackerApp.makeProvider(arguments: ["-UITestFastPolling"], environment: [:]) is MockAircraftProvider)
+    }
+
     func testEnvironmentOwnsInjectedProviderAndPollingServiceUsesIt() async throws {
         let provider = InjectedProvider()
         let environment = AppEnvironment(aircraftProvider: provider)
