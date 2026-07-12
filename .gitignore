@@ -1,0 +1,10 @@
+.DS_Store
+DerivedData/
+build/
+*.xcuserstate
+*.xcresult
+*.memgraph
+xcuserdata/
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
