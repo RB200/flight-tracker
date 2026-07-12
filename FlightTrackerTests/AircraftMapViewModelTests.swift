@@ -1,9 +1,20 @@
 import CoreLocation
+import MapKit
 import XCTest
 @testable import FlightTracker
 
 @MainActor
 final class AircraftMapViewModelTests: XCTestCase {
+    func testAnnotationHighlightTracksMapSelection() {
+        let view = AircraftAnnotationView(annotation: nil, reuseIdentifier: AircraftAnnotationView.reuseIdentifier)
+
+        XCTAssertFalse(view.isVisuallyHighlighted)
+        view.isSelected = true
+        XCTAssertTrue(view.isVisuallyHighlighted)
+        view.isSelected = false
+        XCTAssertFalse(view.isVisuallyHighlighted)
+    }
+
     func testLoadPublishesAircraftAndLoadedState() async {
         let service = AircraftPollingService(provider: MockAircraftProvider(aircraftCount: 12))
         let viewModel = AircraftMapViewModel(pollingService: service)

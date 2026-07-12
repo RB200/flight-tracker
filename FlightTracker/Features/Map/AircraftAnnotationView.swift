@@ -8,6 +8,8 @@ final class AircraftAnnotationView: MKAnnotationView {
     private let selectionRing = UIView()
     private let iconImageView = UIImageView()
     private let callsignLabel = UILabel()
+    private var isStale = false
+    private(set) var isVisuallyHighlighted = false
 
     override var isSelected: Bool {
         didSet { updateSelection(animated: true) }
@@ -28,7 +30,8 @@ final class AircraftAnnotationView: MKAnnotationView {
         iconImageView.transform = .identity
         iconImageView.alpha = 1
         callsignLabel.text = nil
-        selectionRing.alpha = 0
+        isStale = false
+        updateSelection(animated: false)
         accessibilityIdentifier = nil
     }
 
@@ -38,7 +41,8 @@ final class AircraftAnnotationView: MKAnnotationView {
         accessibilityValue = aircraft.isStale ? "Stale aircraft" : "Aircraft"
         accessibilityIdentifier = "aircraft-\(aircraft.icao24)"
         callsignLabel.text = aircraft.callsign
-        iconImageView.alpha = aircraft.isStale ? 0.4 : 1
+        isStale = aircraft.isStale
+        iconImageView.alpha = isSelected ? 1 : (isStale ? 0.4 : 1)
 
         // SF Symbols' airplane points right at 0 radians; aviation headings use north as 0°.
         let angle = CGFloat(((aircraft.headingDegrees ?? 0) - 90) * .pi / 180)
@@ -48,10 +52,12 @@ final class AircraftAnnotationView: MKAnnotationView {
         } else {
             changes()
         }
+        updateSelection(animated: false)
     }
 
     func applyMotion(_ aircraft: Aircraft) {
-        iconImageView.alpha = aircraft.isStale ? 0.4 : 1
+        isStale = aircraft.isStale
+        iconImageView.alpha = isSelected ? 1 : (isStale ? 0.4 : 1)
         let angle = CGFloat(((aircraft.headingDegrees ?? 0) - 90) * .pi / 180)
         iconImageView.transform = CGAffineTransform(rotationAngle: angle)
     }
@@ -64,11 +70,16 @@ final class AircraftAnnotationView: MKAnnotationView {
         displayPriority = .defaultHigh
         isAccessibilityElement = true
 
-        selectionRing.frame = CGRect(x: 14, y: 0, width: 28, height: 28)
-        selectionRing.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.2)
-        selectionRing.layer.borderColor = UIColor.systemBlue.cgColor
+        selectionRing.frame = CGRect(x: 10, y: -4, width: 36, height: 36)
+        selectionRing.backgroundColor = .systemBlue
+        selectionRing.layer.borderColor = UIColor.white.cgColor
         selectionRing.layer.borderWidth = 2
-        selectionRing.layer.cornerRadius = 14
+        selectionRing.layer.cornerRadius = 18
+        selectionRing.layer.shadowColor = UIColor.black.cgColor
+        selectionRing.layer.shadowOffset = CGSize(width: 0, height: 3)
+        selectionRing.layer.shadowRadius = 5
+        selectionRing.layer.shadowOpacity = 0
+        selectionRing.transform = CGAffineTransform(scaleX: 0.65, y: 0.65)
         selectionRing.alpha = 0
 
         let configuration = UIImage.SymbolConfiguration(pointSize: 19, weight: .semibold)
@@ -91,12 +102,33 @@ final class AircraftAnnotationView: MKAnnotationView {
     }
 
     private func updateSelection(animated: Bool) {
+        let selected = isSelected
+        isVisuallyHighlighted = selected
         let changes = {
-            self.selectionRing.alpha = self.isSelected ? 1 : 0
-            self.callsignLabel.textColor = self.isSelected ? .systemBlue : .label
+            self.selectionRing.alpha = selected ? 1 : 0
+            self.selectionRing.transform = selected ? .identity : CGAffineTransform(scaleX: 0.65, y: 0.65)
+            self.selectionRing.layer.shadowOpacity = selected ? 0.35 : 0
+            self.iconImageView.tintColor = selected ? .white : .label
+            self.iconImageView.alpha = selected ? 1 : (self.isStale ? 0.4 : 1)
+            self.callsignLabel.textColor = selected ? .white : .label
+            self.callsignLabel.backgroundColor = selected
+                ? .systemBlue
+                : UIColor.systemBackground.withAlphaComponent(0.72)
         }
+        displayPriority = selected ? .required : .defaultHigh
+        zPriority = selected ? .defaultSelected : .defaultUnselected
+        accessibilityValue = [isStale ? "Stale" : nil, selected ? "Selected aircraft" : "Aircraft"]
+            .compactMap { $0 }
+            .joined(separator: ", ")
         if animated {
-            UIView.animate(withDuration: 0.2, animations: changes)
+            UIView.animate(
+                withDuration: 0.22,
+                delay: 0,
+                usingSpringWithDamping: 0.72,
+                initialSpringVelocity: 0.4,
+                options: [.beginFromCurrentState, .allowUserInteraction],
+                animations: changes
+            )
         } else {
             changes()
         }
